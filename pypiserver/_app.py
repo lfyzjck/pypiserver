@@ -20,8 +20,11 @@ except ImportError:     #PY2
 from bottle import static_file, redirect, request, response, HTTPError, Bottle, template
 from pypiserver import __version__
 from pypiserver.core import listdir, find_packages, store, get_prefixes, exists
+from pypiserver.utils import validate_package_name, validate_package_version
 
+logging.basicConfig(format="[%(name)s] %(asctime)-15s %(message)s")
 log = logging.getLogger('pypiserver.http')
+download_logger = logging.getLogger('pypiserver.download')
 packages = None
 
 
@@ -169,8 +172,8 @@ def log_request():
 def log_response():
     log.info(config.log_res_frmt, #vars(response))  ## DOES NOT WORK!
             dict(
-                response=response, 
-                status=response.status, headers=response.headers, 
+                response=response,
+                status=response.status, headers=response.headers,
                 body=response.body, cookies=response.COOKIES,
     ))
 
@@ -213,6 +216,10 @@ def update():
         raise HTTPError(400, output=":action field not found")
 
     if action in ("verify", "submit"):
+        name = request.forms['name']
+        version = request.forms['version']
+        validate_package_name(name, config.fallback_url)
+        validate_package_version(version)
         return ""
 
     if action == "doc_upload":
@@ -253,6 +260,12 @@ def update():
 
     if "/" in content.filename:
         raise HTTPError(400, output="bad filename")
+
+    # verfiy package name and version
+    name = request.forms['name']
+    version = request.forms['version']
+    validate_package_name(name, config.fallback_url)
+    validate_package_version(version)
 
     if not config.overwrite and exists(packages.root, content.filename):
         log.warn("Cannot upload package(%s) since it already exists! \n" +
@@ -352,9 +365,13 @@ def server_static(filename):
     for x in entries:
         f = x.relfn.replace("\\", "/")
         if f == filename:
-            response = static_file(filename, root=x.root, mimetype=mimetypes.guess_type(filename)[0])
+            response = static_file(filename,
+                                   root=x.root,
+                                   mimetype=mimetypes.guess_type(filename)[0])
             if config.cache_control:
-                response.set_header("Cache-Control", "public, max-age=%s" % config.cache_control)
+                response.set_header(
+                    "Cache-Control", "public, max-age=%s" % config.cache_control)
+            download_logger.info("package downloaded: %s" % filename)
             return response
 
     return HTTPError(404)

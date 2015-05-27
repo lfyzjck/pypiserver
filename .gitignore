@@ -34,3 +34,5 @@ __pycache__/
 /eggs/
 /parts/
 /.settings/
+packages/
+.htaccess

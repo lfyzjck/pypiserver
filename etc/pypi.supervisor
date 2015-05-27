@@ -1,0 +1,13 @@
+[program:pypiserver]
+command = /data/apps/pypiserver/bin/gunicorn -w4 -b':8081'  'pypiserver:app("/data/data/packages",fallback_url="http://mirrors.aliyun.com/pypi/simple/",password_file="/data/etc/pypi_pwd.txt",)'
+autostart = true
+umask = 022
+autorestart = true
+stdout_logfile = /data/log/supervisor/pypi_web.log
+redirect_stderr = False
+stdout_logfile_maxbytes = 500MB
+stdout_logfile_backups = 10
+stderr_logfile_maxbytes = 500MB
+stderr_logfile_backups = 10
+log_level=info
+stopsignal = HUP
