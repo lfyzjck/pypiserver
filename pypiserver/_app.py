@@ -12,9 +12,9 @@ try:
 except ImportError:
     from StringIO import StringIO as BytesIO
 
-try:                    #PY3
+try:                    # PY3
     from urllib.parse import urljoin
-except ImportError:     #PY2
+except ImportError:     # PY2
     from urlparse import urljoin
 
 from bottle import static_file, redirect, request, response, HTTPError, Bottle, template
@@ -264,7 +264,9 @@ def update():
     # verfiy package name and version
     name = request.forms['name']
     version = request.forms['version']
-    validate_package_name(name, config.fallback_url)
+    package_names = get_prefixes(packages())
+    if name not in package_names:
+        validate_package_name(name, config.fallback_url)
     validate_package_version(version)
 
     if not config.overwrite and exists(packages.root, content.filename):
